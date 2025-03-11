@@ -5,6 +5,7 @@
 
 # dotenv files
 .env
+ZooDb.db*
 
 # User-specific files
 *.rsuser

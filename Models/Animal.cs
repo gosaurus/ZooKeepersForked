@@ -10,7 +10,7 @@ namespace ZooKeepers.Models
         public int AnimalId {get; set;}
 
         public required string Name {get; set;}
-
+        
         public required string Sex {get; set;}
 
         public required DateOnly DateOfBirth {get; set;}

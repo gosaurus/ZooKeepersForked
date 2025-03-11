@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Options;
 using Microsoft.EntityFrameworkCore;
 using ZooKeepers.Data;
+using ZooKeepers.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +16,13 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+
+    ZooKeepersSeed.SeedData(services);
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
