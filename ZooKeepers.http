@@ -1,0 +1,6 @@
+@ZooKeepers_HostAddress = http://localhost:5100
+
+GET {{ZooKeepers_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
