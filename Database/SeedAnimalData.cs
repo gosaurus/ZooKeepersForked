@@ -84,6 +84,7 @@ namespace ZooKeepers.Data
         {
             using (var zoodbcontext = new ZooDbContext(serviceProvider.GetRequiredService<DbContextOptions<ZooDbContext>>()))
             {
+                if(zoodbcontext.Animals.Any()) return;
                 foreach (var animal in zooanimals)
                 {
                     string name = animal.Key;
@@ -92,12 +93,9 @@ namespace ZooKeepers.Data
                     DateOnly dateAcquired = dateOfBirth.AddYears(Random.Shared.Next(1, 5));
                     string species = animal.Value.Species;
                     string classification = animal.Value.Classification;
-                    Console.WriteLine(name);
-
                     zoodbcontext.Animals.Add(new Animal{Name=name, Sex=sex, DateOfBirth=dateOfBirth, DateAcquired=dateAcquired, Species=species, Classification=classification});
                     zoodbcontext.SaveChanges();
                 }
-                Console.WriteLine("test");
             }
         }
 

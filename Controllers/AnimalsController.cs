@@ -29,7 +29,7 @@ public class AnimalsController : ControllerBase
     }
  
     [HttpGet("{animalid}")]
-    public async Task<ActionResult<IEnumerable<Animal>>> Get(int animalid)
+    public async Task<ActionResult<IEnumerable<Animal>>> GetAnimal(int animalid)
     {
          _logger.LogInformation($"Fetching animals by id: {animalid}.");
          var animal = await _context.Animals.FirstOrDefaultAsync(animal=> animalid == animal.AnimalId);
@@ -43,8 +43,7 @@ public class AnimalsController : ControllerBase
         _logger.LogInformation($"Adding Animal {animal.Name}");
         _context.Animals.Add(animal);
         _context.SaveChanges();
-        return CreatedAtAction(nameof(Get),new{id=animal.AnimalId},animal);
+        return CreatedAtAction(nameof(GetAnimal),new{animalid=animal.AnimalId},animal);
     }
-
 
 }

@@ -11,7 +11,7 @@ using ZooKeepers.Data;
 namespace ZooKeepers.Migrations
 {
     [DbContext(typeof(ZooDbContext))]
-    [Migration("20250312133545_InitialCreate")]
+    [Migration("20250312141415_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />

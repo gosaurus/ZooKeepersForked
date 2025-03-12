@@ -20,7 +20,6 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
-    Console.WriteLine("testprogram");
     ZooKeepersSeed.SeedAnimals(services);
 }
 
