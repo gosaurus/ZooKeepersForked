@@ -5,7 +5,7 @@ using ZooKeepers.Models;
 
 namespace ZooKeepers.Data
 {
-    public static class ZooKeepersSeed
+    public static class ZooKeepersAnimals
     {
         public static void SeedData(IServiceProvider serviceProvider)
         {

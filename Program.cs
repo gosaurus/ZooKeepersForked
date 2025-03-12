@@ -20,8 +20,8 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
-
-    ZooKeepersSeed.SeedData(services);
+    Console.WriteLine("testprogram");
+    ZooKeepersSeed.SeedAnimals(services);
 }
 
 // Configure the HTTP request pipeline.
