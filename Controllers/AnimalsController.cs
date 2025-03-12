@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore.Design;
 using SQLitePCL;
 using ZooKeepers.Data;
 using ZooKeepers.Models;
+using System.Globalization;
+
 
 namespace ZooKeepers.Controllers;
 
@@ -53,9 +55,14 @@ public class AnimalsController : ControllerBase
             animal.Classification.Contains(searchQuery)||
             animal.Name.Contains(searchQuery));
             //animal.DateAcquired.ToString("yyyy-mm-dd").Contains(searchQuery));
-
          }
 
+         if (DateTime.TryParseExact(searchQuery,"yyyy-MM-dd",CultureInfo.InvariantCulture,DateTimeStyles.None, out DateTime searchDate))
+         {
+            Console.WriteLine($"SearchDate in DateOnly format {DateOnly.FromDateTime(searchDate)}");
+            animalsQuery = animalsQuery.Where(animal =>animal.DateAcquired==DateOnly.FromDateTime(searchDate));
+         }
+         
          switch(orderBy.ToLower())
          {
             case "name":
