@@ -49,6 +49,24 @@ namespace ZooKeepers.Migrations
 
                     b.ToTable("Animals");
                 });
+
+            modelBuilder.Entity("ZooKeepers.Models.Enclosure", b =>
+                {
+                    b.Property<int>("EnclosureId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("MaxCapacity")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("EnclosureId");
+
+                    b.ToTable("Enclosures");
+                });
 #pragma warning restore 612, 618
         }
     }

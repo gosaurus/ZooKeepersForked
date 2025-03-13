@@ -21,6 +21,7 @@ using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     ZooKeepersSeed.SeedAnimals(services);
+    ZooKeepersSeed.seedEnclosures(services);
 }
 
 // Configure the HTTP request pipeline.

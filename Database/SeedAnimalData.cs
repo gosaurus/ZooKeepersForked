@@ -8,15 +8,6 @@ namespace ZooKeepers.Data
 {
     public static class ZooKeepersSeed
     {
-        private static readonly Dictionary<string, int> enclosuresDict = new Dictionary<string, int> 
-        {
-            {"Lions' Den", 10},
-            {"Aviary", 50},
-            {"Reptile", 40},
-            {"Giraffe", 6},
-            {"Hippo", 10},
-        }; 
-
         private static readonly Dictionary<string, (string Species, string Classification)> zooanimals = new Dictionary<string, (string Species, string Classification)>
             {
                     {"Dory", ("Blue Tang", "Fish")},
@@ -115,7 +106,7 @@ namespace ZooKeepers.Data
                 var seededEnclosures = new List<Enclosure>();
                 
                 //create enclosures
-                foreach (var enclosure in enclosuresDict)
+                foreach (var enclosure in Enclosure.enclosuresDict)
                 {
                     var enclosureToAdd = new Enclosure 
                     {
@@ -130,15 +121,36 @@ namespace ZooKeepers.Data
 
                 //create list of Enclosure objects
                 var allEnclosures = zoodbcontext.Enclosures.ToList();
-                var someAnimals = zoodbcontext.Animals.Select(animal => animal.AnimalId).Take(116).ToList();
+                var someAnimals = zoodbcontext.Animals.Take(116).ToList();
                 foreach (var enclosure in allEnclosures)
                 {
-                    for (int count = 0; count < enclosure.MaxCapacity; count++)
+                    do 
                     {
-                        Enclosure.AddAnimalToEnclosure(someAnimals[count]);
-                        //getting error here
+                        foreach (var animal in someAnimals)
+                        {
+                            enclosure.AddAnimalToEnclosure(animal);
+                            zoodbcontext.SaveChanges();
+                        }
                     }
-                    //skip over enclosure.MaxCapacity in someAnimals so next set of animals to next enclosure
+                    while (enclosure.Animals.Count() <= enclosure.MaxCapacity);
+                    Console.WriteLine($"Exit while loop, Enclosure {enclosure.Name} count = {enclosure.Animals.Count()}");
+                    //delete the db next time:
+
+            //                     Exit while loop, Enclosure Lions' Den count = 67
+            // Exit while loop, Enclosure Aviary count = 67
+            // Exit while loop, Enclosure Reptile count = 67
+            // Exit while loop, Enclosure Aviary count = 67
+            // Exit while loop, Enclosure Reptile count = 67
+            // Exit while loop, Enclosure Reptile count = 67
+            // Exit while loop, Enclosure Giraffe count = 67
+            // Exit while loop, Enclosure Hippo count = 67
+            // Exit while loop, Enclosure Hippo count = 67
+            // info: Microsoft.Hosting.Lifetime[14]
+            // Exit while loop, Enclosure Hippo count = 67
+            // Exit while loop, Enclosure Hippo count = 67
+            // info: Microsoft.Hosting.Lifetime[14]
+            // Exit while loop, Enclosure Hippo count = 67
+            // Exit while loop, Enclosure Hippo count = 67
                 }
             }
         }
