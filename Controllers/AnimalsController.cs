@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore.Design;
 using SQLitePCL;
 using ZooKeepers.Data;
 using ZooKeepers.Models;
-using ZooKeepers.Utils;
 using System.Globalization;
 
 
@@ -24,13 +23,12 @@ public class AnimalsController : ControllerBase
         _context = context;
         
     }
-
-    // [HttpGet]
-    // public async Task<ActionResult<IEnumerable<Animal>>> Get()
-    // {
-    //      _logger.LogInformation("Fetching all animals.");
-    //      return await _context.Animals.ToListAsync();
-    // }
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<Animal>>> Get()
+    {
+        _logger.LogInformation("Fetching all animals.");
+        return await _context.Animals.ToListAsync();
+    }
  
     [HttpGet("{animalid}")]
     public async Task<ActionResult<IEnumerable<Animal>>> GetAnimal(int animalid)
@@ -40,7 +38,7 @@ public class AnimalsController : ControllerBase
          return animal==null? NotFound():Ok(animal);
     }
 
-    [HttpGet]
+    [HttpGet("search")]
     public async Task<ActionResult<IEnumerable<Animal>>> GetPaginatedAnimals(
         [FromQuery] string searchQuery ="",
         [FromQuery] int pageNumber = 1,
@@ -62,7 +60,11 @@ public class AnimalsController : ControllerBase
 
          if(ageQuery.HasValue)
          {
-            animalsQuery = animalsQuery.Where(animal=> Age.CalculateAge(animal) == ageQuery);
+            animalsQuery = animalsQuery.Where(animal=> 
+            (DateTime.UtcNow.Year-animal.DateOfBirth.Year)-
+            ((DateTime.UtcNow.Month<animal.DateOfBirth.Month)||
+             (DateTime.UtcNow.Month==animal.DateOfBirth.Month&&DateTime.UtcNow.Day<animal.DateOfBirth.Day)? 1:0)
+            == ageQuery);
          }
 
          switch(orderBy.ToLower())
