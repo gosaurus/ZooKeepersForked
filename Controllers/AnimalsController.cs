@@ -4,7 +4,9 @@ using Microsoft.EntityFrameworkCore.Design;
 using SQLitePCL;
 using ZooKeepers.Data;
 using ZooKeepers.Models;
+using ZooKeepers.Utils;
 using System.Globalization;
+
 
 
 namespace ZooKeepers.Controllers;
@@ -43,6 +45,7 @@ public class AnimalsController : ControllerBase
         [FromQuery] string searchQuery ="",
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 10,
+        [FromQuery] int? ageQuery= null,
         [FromQuery] string orderBy = "species")
     {
          _logger.LogInformation($"Fetching animals with pageNumber:{pageNumber},pagesize:{pageSize},searchquery:{searchQuery},orderby:{orderBy}");
@@ -53,16 +56,15 @@ public class AnimalsController : ControllerBase
             animalsQuery=animalsQuery.Where(animal=>
             animal.Species.Contains(searchQuery)||
             animal.Classification.Contains(searchQuery)||
-            animal.Name.Contains(searchQuery));
-            //animal.DateAcquired.ToString("yyyy-mm-dd").Contains(searchQuery));
+            animal.Name.Contains(searchQuery)||
+            animal.DateAcquired==DateOnly.Parse(searchQuery));
          }
 
-         if (DateTime.TryParseExact(searchQuery,"yyyy-MM-dd",CultureInfo.InvariantCulture,DateTimeStyles.None, out DateTime searchDate))
+         if(ageQuery.HasValue)
          {
-            Console.WriteLine($"SearchDate in DateOnly format {DateOnly.FromDateTime(searchDate)}");
-            animalsQuery = animalsQuery.Where(animal =>animal.DateAcquired==DateOnly.FromDateTime(searchDate));
+            animalsQuery = animalsQuery.Where(animal=> Age.CalculateAge(animal) == ageQuery);
          }
-         
+
          switch(orderBy.ToLower())
          {
             case "name":
