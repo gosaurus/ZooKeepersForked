@@ -8,6 +8,15 @@ namespace ZooKeepers.Data
 {
     public static class ZooKeepersSeed
     {
+        private static readonly Dictionary<string, int> enclosuresDict = new Dictionary<string, int> 
+        {
+            {"Lions' Den", 10},
+            {"Aviary", 50},
+            {"Reptile", 40},
+            {"Giraffe", 6},
+            {"Hippo", 10},
+        }; 
+
         private static readonly Dictionary<string, (string Species, string Classification)> zooanimals = new Dictionary<string, (string Species, string Classification)>
             {
                     {"Dory", ("Blue Tang", "Fish")},
@@ -95,6 +104,41 @@ namespace ZooKeepers.Data
                     string classification = animal.Value.Classification;
                     zoodbcontext.Animals.Add(new Animal{Name=name, Sex=sex, DateOfBirth=dateOfBirth, DateAcquired=dateAcquired, Species=species, Classification=classification});
                     zoodbcontext.SaveChanges();
+                }
+
+            }
+        }
+        public static void seedEnclosures(IServiceProvider serviceProvider)
+        {
+            using (var zoodbcontext = new ZooDbContext(serviceProvider.GetRequiredService<DbContextOptions<ZooDbContext>>()))
+            {
+                var seededEnclosures = new List<Enclosure>();
+                
+                //create enclosures
+                foreach (var enclosure in enclosuresDict)
+                {
+                    var enclosureToAdd = new Enclosure 
+                    {
+                        Name = enclosure.Key,
+                        MaxCapacity = enclosure.Value
+                    };
+                    zoodbcontext.Enclosures.Add(enclosureToAdd);
+                    zoodbcontext.SaveChanges();
+
+                    Console.WriteLine($"Added enclosure {enclosureToAdd.Name}, {enclosureToAdd.MaxCapacity}");
+                }
+
+                //create list of Enclosure objects
+                var allEnclosures = zoodbcontext.Enclosures.ToList();
+                var someAnimals = zoodbcontext.Animals.Select(animal => animal.AnimalId).Take(116).ToList();
+                foreach (var enclosure in allEnclosures)
+                {
+                    for (int count = 0; count < enclosure.MaxCapacity; count++)
+                    {
+                        Enclosure.AddAnimalToEnclosure(someAnimals[count]);
+                        //getting error here
+                    }
+                    //skip over enclosure.MaxCapacity in someAnimals so next set of animals to next enclosure
                 }
             }
         }

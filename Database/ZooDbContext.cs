@@ -5,7 +5,8 @@ namespace ZooKeepers.Data
 {
     public class ZooDbContext : DbContext
     {
-        public DbSet<Animal> Animals{get; set;}
+        public DbSet<Animal> Animals {get; set;}
+        public DbSet<Enclosure> Enclosures {get; set;}
 
         public ZooDbContext(DbContextOptions<ZooDbContext>options) : base(options) {}
 
