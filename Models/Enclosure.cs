@@ -12,35 +12,11 @@ namespace ZooKeepers.Models
         public ICollection<Animal>? Animals = new List<Animal>();
         public void AddAnimalToEnclosure(Animal animal)
         {
-            Animals?.Add(animal);
-        }
-
-        public int GetEnclosureCapacity(string name)
-        {
-            switch(name)
+            if (Animals?.Count == MaxCapacity)
             {
-                case "Lion":
-                    return (int)EnclosureCapacities.Lion;
-                case "Aviary":
-                    return (int)EnclosureCapacities.Aviary;
-                case "Reptile":
-                    return (int)EnclosureCapacities.Reptile;
-                case "Giraffe":
-                    return (int)EnclosureCapacities.Giraffe;
-                case "Hippo":
-                    return (int)EnclosureCapacities.Hippo;
-                default:
-                    throw new Exception("Invalid Enclosure. This Enclosure does not exist.");
+                throw new Exception("Enclosure at maximum capacity.");
             }
-        }
-
-        enum EnclosureCapacities
-        {
-            Lion = 10,
-            Aviary = 50,
-            Reptile = 40,
-            Giraffe = 6,
-            Hippo = 10,
+            Animals?.Add(animal);
         }
 
         public static readonly Dictionary<string, int> enclosuresDict = new Dictionary<string, int> 
@@ -51,6 +27,7 @@ namespace ZooKeepers.Models
             {"Giraffe", 6},
             {"Hippo", 10},
         }; 
+
     }
 
 }

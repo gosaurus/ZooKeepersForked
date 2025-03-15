@@ -15,12 +15,16 @@ namespace ZooKeepers.Models
 
         public required DateOnly DateOfBirth {get; set;}
 
-        public required DateOnly DateAcquired {get; set;}
+        public DateOnly DateAcquired { get;set; } 
 
         public required string Species {get; set;}
 
         public required string Classification {get; set;}
 
-    }
+        public override string ToString()
+        {
+            return $"{AnimalId} {Name}";
+        }
 
+    }
 }

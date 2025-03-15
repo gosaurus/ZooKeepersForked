@@ -2,106 +2,53 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using NLog.LayoutRenderers;
+using ZooKeepers.Constants;
 using ZooKeepers.Models;
 
 namespace ZooKeepers.Data
 {
     public static class ZooKeepersSeed
     {
-        private static readonly Dictionary<string, (string Species, string Classification)> zooanimals = new Dictionary<string, (string Species, string Classification)>
-            {
-                    {"Dory", ("Blue Tang", "Fish")},
-                    {"Nemo", ("Clownfish", "Fish")},
-                    {"Flounder", ("Fish", "Fish")},
-                    {"Marlin", ("Clownfish", "Fish")},
-                    {"Sebastian", ("Red Jamaican Crab", "Invertebrate")},
-                    {"Bambi", ("Deer", "Mammal")},
-                    {"Thumper", ("Rabbit", "Mammal")},
-                    {"Flower", ("Skunk", "Mammal")},
-                    {"Gus Gus", ("Mouse", "Mammal")},
-                    {"Jaq", ("Mouse", "Mammal")},
-                    {"Mickey Mouse", ("Mouse", "Mammal")},
-                    {"Minnie Mouse", ("Mouse", "Mammal")},
-                    {"Goofy", ("Dog", "Mammal")},
-                    {"Pluto", ("Dog", "Mammal")},
-                    {"Copper", ("Hound Dog", "Mammal")},
-                    {"Todd", ("Fox", "Mammal")},
-                    {"Robin Hood", ("Fox", "Mammal")},
-                    {"Little John", ("Bear", "Mammal")},
-                    {"Ben", ("Rat", "Mammal")},
-                    {"Wilbur", ("Pig", "Mammal")},
-                    {"Charlotte", ("Spider", "Invertebrate")},
-                    {"Bagheera", ("Panther", "Mammal")},
-                    {"Kaa", ("Python", "Reptile")},
-                    {"Tiana", ("Frog", "Amphibian")},
-                    {"Louis", ("Alligator", "Reptile")},
-                    {"Pascal", ("Chameleon", "Reptile")},
-                    {"Maximus", ("Horse", "Mammal")},
-                    {"Sven", ("Reindeer", "Mammal")},
-                    {"Flit", ("Hummingbird", "Bird")},
-                    {"Donald Duck", ("Duck", "Bird")},
-                    {"Scrooge McDuck", ("Duck", "Bird")},
-                    {"Robin", ("Bird", "Bird")},
-                    {"Lenny", ("Whale", "Fish")},
-                    {"Gordon", ("Crab", "Invertebrate")},
-                    {"Crush", ("Sea Turtle", "Reptile")},
-                    {"Zazu", ("Hornbill", "Bird")},
-                    {"Timon", ("Meerkat", "Mammal")},
-                    {"Pumbaa", ("Warthog", "Mammal")},
-                    {"Lumière", ("Candle", "Other")},
-                    {"Madame Mim", ("Snake", "Reptile")},
-                    {"Frou-Frou", ("Bird", "Bird")},
-                    {"Gaston", ("Boar", "Mammal")},
-                    {"Coco", ("Dog", "Mammal")},
-                    {"Sally", ("Spider", "Invertebrate")},
-                    {"Moo", ("Cow", "Mammal")},
-                    {"Dumbo", ("Elephant", "Mammal")},
-                    {"Tramp", ("Dog", "Mammal")},
-                    {"Lady", ("Dog", "Mammal")},
-                    {"Jock", ("Dog", "Mammal")},
-                    {"Scrooge", ("Duck", "Bird")},
-                    {"Huey", ("Duck", "Bird")},
-                    {"Dewey", ("Duck", "Bird")},
-                    {"Louie", ("Duck", "Bird")},
-                    {"Perdita", ("Dog", "Mammal")},
-                    {"Pongo", ("Dog", "Mammal")},
-                    {"Luna", ("Polar Bear", "Mammal")},
-                    {"Pip", ("Squirrel", "Mammal")},
-                    {"Cody", ("Golden Retriever", "Mammal")},
-                    {"Bernadette", ("Poodle", "Mammal")},
-                    {"Princess", ("Cat", "Mammal")},
-                    {"Shenzi", ("Hyena", "Mammal")},
-                    {"Banzai", ("Hyena", "Mammal")},
-                    {"Ed", ("Hyena", "Mammal")},
-                    {"Lizard", ("Lizard", "Reptile")},
-                    {"Bolt", ("Dog", "Mammal")},
-                    {"Slinky Dog", ("Dog", "Mammal")},
-                    {"Mr. Pricklepants", ("Hedgehog", "Mammal")}
-                };
-        private static readonly string[] gender = ["Male", "Female", "Other"];
-
         public static void SeedAnimals(IServiceProvider serviceProvider)
         {
             using (var zoodbcontext = new ZooDbContext(serviceProvider.GetRequiredService<DbContextOptions<ZooDbContext>>()))
             {
                 if(zoodbcontext.Animals.Any()) return;
-                foreach (var animal in zooanimals)
+
+                for (int count = 1; count <= 116; count++)
                 {
-                    string name = animal.Key;
-                    string sex = gender[Random.Shared.Next(gender.Length)];
-                    DateOnly dateOfBirth = GetRandomDate();
-                    DateOnly dateAcquired = dateOfBirth.AddYears(Random.Shared.Next(1, 5));
-                    string species = animal.Value.Species;
-                    string classification = animal.Value.Classification;
-                    zoodbcontext.Animals.Add(new Animal{Name=name, Sex=sex, DateOfBirth=dateOfBirth, DateAcquired=dateAcquired, Species=species, Classification=classification});
+                    string name = ReadOnlyAnimalProperties.animalNames[Random.Shared.Next(ReadOnlyAnimalProperties.animalNames.Length)] + count;
+                    string sex = 
+                        ReadOnlyAnimalProperties.SexOptions
+                        [Random.Shared.Next(ReadOnlyAnimalProperties.SexOptions.Count)];
+                    DateOnly dateOfBirth = GetRandomDate(2010, 2024);
+                    DateOnly dateAcquired = dateOfBirth.AddMonths(-1*Random.Shared.Next(1, 18));
+                    string species = ReadOnlyAnimalProperties.animalNames[Random.Shared.Next(ReadOnlyAnimalProperties.animalNames.Length)];
+                    string classification = 
+                        ReadOnlyAnimalProperties.ClassificationOptions
+                        [Random.Shared.Next(ReadOnlyAnimalProperties.ClassificationOptions.Count)];
+
+                    zoodbcontext.Add
+                    (     
+                        new Animal
+                        {
+                            Name = name,
+                            Sex = sex,
+                            DateOfBirth = dateOfBirth,
+                            DateAcquired = dateAcquired,      
+                            Species = species,
+                            Classification = classification
+                        }
+                    );
+                
                     zoodbcontext.SaveChanges();
                 }
-
             }
         }
-        public static void seedEnclosures(IServiceProvider serviceProvider)
+        public static void createEnclosures(IServiceProvider serviceProvider)
         {
-            using (var zoodbcontext = new ZooDbContext(serviceProvider.GetRequiredService<DbContextOptions<ZooDbContext>>()))
+            using (var zoodbcontext = new ZooDbContext
+                (serviceProvider.GetRequiredService<DbContextOptions<ZooDbContext>>()))
             {
                 var seededEnclosures = new List<Enclosure>();
                 
@@ -118,42 +65,37 @@ namespace ZooKeepers.Data
 
                     Console.WriteLine($"Added enclosure {enclosureToAdd.Name}, {enclosureToAdd.MaxCapacity}");
                 }
+            }
+        }
 
+        public static void seedEnclosures(IServiceProvider serviceProvider)
+        {
+            using (var zoodbcontext = new ZooDbContext
+                ( serviceProvider.GetRequiredService<DbContextOptions<ZooDbContext>>()))
+            {
                 //create list of Enclosure objects
                 var allEnclosures = zoodbcontext.Enclosures.ToList();
-                var someAnimals = zoodbcontext.Animals.Take(116).ToList();
+                var someAnimals = zoodbcontext.Animals.ToList();
+                Console.WriteLine($"Count of someAnimals = {someAnimals.Count}");
+
                 foreach (var enclosure in allEnclosures)
                 {
-                    do 
+                    for (var count = 0; count < enclosure.MaxCapacity; count++)
                     {
-                        foreach (var animal in someAnimals)
-                        {
-                            enclosure.AddAnimalToEnclosure(animal);
-                            zoodbcontext.SaveChanges();
-                        }
+                        enclosure.AddAnimalToEnclosure(someAnimals[count]);
+                        zoodbcontext.SaveChanges();
+                        Console.WriteLine($"Added {someAnimals[count]}, {count}");
                     }
-                    while (enclosure.Animals.Count() <= enclosure.MaxCapacity);
-                    Console.WriteLine($"Exit while loop, Enclosure {enclosure.Name} count = {enclosure.Animals.Count()}");
-                    //delete the db next time:
+                    someAnimals.RemoveRange(0,enclosure.MaxCapacity-1);
+                }
 
-            //                     Exit while loop, Enclosure Lions' Den count = 67
-            // Exit while loop, Enclosure Aviary count = 67
-            // Exit while loop, Enclosure Reptile count = 67
-            // Exit while loop, Enclosure Aviary count = 67
-            // Exit while loop, Enclosure Reptile count = 67
-            // Exit while loop, Enclosure Reptile count = 67
-            // Exit while loop, Enclosure Giraffe count = 67
-            // Exit while loop, Enclosure Hippo count = 67
-            // Exit while loop, Enclosure Hippo count = 67
-            // info: Microsoft.Hosting.Lifetime[14]
-            // Exit while loop, Enclosure Hippo count = 67
-            // Exit while loop, Enclosure Hippo count = 67
-            // info: Microsoft.Hosting.Lifetime[14]
-            // Exit while loop, Enclosure Hippo count = 67
-            // Exit while loop, Enclosure Hippo count = 67
+                foreach (var seededEnclosure in allEnclosures)
+                {
+                    Console.WriteLine($"{seededEnclosure.Name}, {seededEnclosure.MaxCapacity}");
                 }
             }
         }
+        
 
         public static DateOnly GetRandomDate(int minYear = 2010, int maxYear = 2024)
         {
