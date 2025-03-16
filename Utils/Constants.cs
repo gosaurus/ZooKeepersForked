@@ -1,3 +1,5 @@
+using ZooKeepers.Models;
+
 namespace ZooKeepers.Constants
 {
     public class ReadOnlyProperties 
@@ -45,5 +47,19 @@ namespace ZooKeepers.Constants
             {"Giraffe", 6},
             {"Hippo", 10},
         };
+
+        public static bool ValidSex(Animal animal, List<string> options)
+        {
+            return options.Contains(animal.Sex);
+        }
+
+        public static bool ValidClassification(Animal animal, List<string> options)
+        {
+            return options.Contains(animal.Classification);
+        }
+        public static bool ValidSpecies(Animal animal, string[] options)
+        {
+            return Array.Exists(options, species => species == animal.Species);
+        }
     } 
 };

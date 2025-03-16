@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Diagnostics.CodeAnalysis;
 
 namespace ZooKeepers.Models
@@ -8,22 +9,17 @@ namespace ZooKeepers.Models
     {
         [Key]
         public int AnimalId {get; set;}
-
         public required string Name {get; set;}
-        
         public required string Sex {get; set;}
-
         public required DateOnly DateOfBirth {get; set;}
-
         public DateOnly DateAcquired { get;set; } 
-
         public required string Species {get; set;}
-
         public required string Classification {get; set;}
-
+        [ForeignKey("EnclosureId")]
+        public Enclosure? Enclosure { get; set; }
         public override string ToString()
         {
-            return $"{AnimalId} {Name}";
+            return $"{AnimalId} Name: {Name} - Enclosure: {Enclosure}";
         }
 
     }

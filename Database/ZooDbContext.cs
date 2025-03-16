@@ -10,11 +10,11 @@ namespace ZooKeepers.Data
 
         public ZooDbContext(DbContextOptions<ZooDbContext>options) : base(options) {}
 
-
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if(!optionsBuilder.IsConfigured)
             {
+                Console.WriteLine("Using fallback configuration on database. To change this, add a DefaultConnection setting in appsettings.json.");
                 optionsBuilder.UseSqlite("Data Source = ZooDb.db");
             }
         }

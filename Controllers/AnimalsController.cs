@@ -10,6 +10,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using NLog.LayoutRenderers;
+using System.Net;
 
 namespace ZooKeepers.Controllers;
 
@@ -24,7 +25,6 @@ public class AnimalsController : ControllerBase
     {
         _logger = logger;
         _context = context;
-        
     }
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Animal>>> Get()
@@ -109,7 +109,6 @@ public class AnimalsController : ControllerBase
             return animal => animal.Name;
 
             case "classification":
-            Console.WriteLine($"Returning {filter} as lambda");
             return animal => animal.Classification;
             
             case "dateacquired":
@@ -119,7 +118,6 @@ public class AnimalsController : ControllerBase
             return animal => animal.DateOfBirth;
 
             case "species":
-            Console.WriteLine($"Returning {filter} as lambda");
             return animal => animal.Species;
             
             default:
@@ -195,12 +193,44 @@ public class AnimalsController : ControllerBase
 
     [HttpPost]
 
-    public ActionResult Post(Animal animal)
+    public async Task<ActionResult> Post([FromBody] Animal animal)
     {
         _logger.LogInformation($"Adding Animal {animal.Name}");
+        if (!ModelState.IsValid)
+        {
+            BadRequest(ModelState);
+        }
+
+        if (!ReadOnlyProperties.ValidSex(animal, ReadOnlyProperties.SexOptions))
+        {
+            string message = "Invalid input in 'Sex' field. Please try again.";
+            return BadRequest(CreateProblemDetailsObject(HttpStatusCode.BadRequest, message));
+        }
+        if (!ReadOnlyProperties.ValidClassification(animal, ReadOnlyProperties.ClassificationOptions))
+        {
+            string message = "Invalid input in 'Classification' field. Please try again.";
+            return BadRequest(CreateProblemDetailsObject(HttpStatusCode.BadRequest, message));
+        }
+        if (!ReadOnlyProperties.ValidSpecies(animal, ReadOnlyProperties.animalNames))
+        {
+            string message = "Invalid input in 'Species' field. Please try again.";
+            return BadRequest(CreateProblemDetailsObject(HttpStatusCode.BadRequest, message));
+        }
+        
         _context.Animals.Add(animal);
+        
         _context.SaveChanges();
         return CreatedAtAction(nameof(GetAnimal),new{animalid=animal.AnimalId},animal);
+    }
+
+    public static object CreateProblemDetailsObject(HttpStatusCode statuscode, string message)
+    {
+        return new ProblemDetails 
+        {
+            Type = "https://datatracker.ietf.org/doc/html/rfc7231#section-6.5.1",
+            HttpStatusCode = (int?)statuscode,
+            Detail = message,
+        };
     }
 
 }

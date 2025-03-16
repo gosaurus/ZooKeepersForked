@@ -33,6 +33,9 @@ namespace ZooKeepers.Migrations
                     b.Property<DateOnly>("DateOfBirth")
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("EnclosureId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -46,6 +49,8 @@ namespace ZooKeepers.Migrations
                         .HasColumnType("TEXT");
 
                     b.HasKey("AnimalId");
+
+                    b.HasIndex("EnclosureId");
 
                     b.ToTable("Animals");
                 });
@@ -66,6 +71,15 @@ namespace ZooKeepers.Migrations
                     b.HasKey("EnclosureId");
 
                     b.ToTable("Enclosures");
+                });
+
+            modelBuilder.Entity("ZooKeepers.Models.Animal", b =>
+                {
+                    b.HasOne("ZooKeepers.Models.Enclosure", "Enclosure")
+                        .WithMany()
+                        .HasForeignKey("EnclosureId");
+
+                    b.Navigation("Enclosure");
                 });
 #pragma warning restore 612, 618
         }
