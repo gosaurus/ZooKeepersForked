@@ -2,6 +2,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.EntityFrameworkCore;
 using ZooKeepers.Data;
 using ZooKeepers.Models;
+using ZooKeepers.Constants;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,8 +22,9 @@ using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     ZooKeepersSeed.SeedAnimals(services);
-    ZooKeepersSeed.createEnclosures(services);
-    ZooKeepersSeed.seedEnclosures(services);
+    bool createdEnclosures = ZooKeepersSeed.createEnclosures(services);
+    if (createdEnclosures)
+        ZooKeepersSeed.seedEnclosures(services);
 }
 
 // Configure the HTTP request pipeline.

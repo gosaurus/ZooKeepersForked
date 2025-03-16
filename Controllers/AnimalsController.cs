@@ -4,9 +4,11 @@ using Microsoft.EntityFrameworkCore.Design;
 using SQLitePCL;
 using ZooKeepers.Data;
 using ZooKeepers.Models;
+using ZooKeepers.Constants;
 using System.Globalization;
-
-
+using System.Reflection.Metadata.Ecma335;
+using System.Linq.Expressions;
+using System.Threading.Tasks;
 
 namespace ZooKeepers.Controllers;
 
@@ -36,6 +38,90 @@ public class AnimalsController : ControllerBase
          _logger.LogInformation($"Fetching animals by id: {animalid}.");
          var animal = await _context.Animals.FirstOrDefaultAsync(animal=> animalid == animal.AnimalId);
          return animal==null? NotFound():Ok(animal);
+    }
+
+    [HttpGet("search2")]
+    public async Task<ActionResult<IEnumerable<Animal>>> GetPaginatedResults
+    (
+        [FromQuery] SearchParameters.SearchParameters searchParameters
+    )
+    {
+        Console.WriteLine(searchParameters);
+
+        IQueryable<Animal> searchQuery = _context.Animals
+            .Where(animal => 
+                (animal.Name.Contains(searchParameters.AnimalName) || searchParameters.AnimalName == null) &&
+                (animal.Species == searchParameters.Species || searchParameters.Species == null) &&  
+                (animal.Classification == searchParameters.Classification || searchParameters.Classification == null) &&
+                (animal.DateAcquired == searchParameters.DateAcquired || searchParameters.DateAcquired == null) &&
+                (searchParameters.Age == null ||
+                    (DateTime.Now.Year - animal.DateOfBirth.Year == searchParameters.Age && //current year - dob year == search params
+                    (animal.DateOfBirth.Month < DateTime.Now.Month ||  // AND dob month has passed
+                    animal.DateOfBirth.Month == DateTime.Now.Month && animal.DateOfBirth.Day <= DateTime.Now.Day)) // if current month, compare dob day;
+                ));
+
+        
+        string filter = searchParameters.GetFilter(searchParameters); //ensure not null
+
+        Console.WriteLine($"Filter = {filter}");
+
+        // if (searchParameters.OrderByDescending == "True")
+        //     searchQuery.OrderByDescending(filterLambdaExpression);
+        // else 
+        //     searchQuery.OrderBy(filterLambdaExpression);
+
+        var searchQueryCount = await searchQuery.CountAsync();
+        
+        var animalsList = await searchQuery
+            .OrderBy(GetFilterLambdaExpression(filter))
+            .Skip((searchParameters.PageNumber - 1) * searchParameters.PageSize)
+            .Take(searchParameters.PageSize)
+            .ToListAsync();
+
+        var response = new 
+        {
+                TotalItems = searchQueryCount,
+                searchParameters.PageSize,
+                searchParameters.PageNumber,
+                Animals = animalsList
+        };
+        return Ok( response);
+    }
+
+    // private static async Task<List<Animal>> OrderByDescending
+    // (
+    //     IQueryable<Animal> searchQuery,
+    //     Expression<Func<Animal, object>> FilterLambdaExpression
+    // )
+    // {
+    //     return await searchQuery.OrderByDescending(FilterLambdaExpression).ToListAsync();
+    // }
+
+    private static Expression<Func<Animal, object>> GetFilterLambdaExpression(string filter)
+    {
+        
+        switch(filter.ToLower())
+        {
+            case "name":
+            return animal => animal.Name;
+
+            case "classification":
+            Console.WriteLine($"Returning {filter} as lambda");
+            return animal => animal.Classification;
+            
+            case "dateacquired":
+            return animal  => animal.DateAcquired;
+
+            case "age":
+            return animal => animal.DateOfBirth;
+
+            case "species":
+            Console.WriteLine($"Returning {filter} as lambda");
+            return animal => animal.Species;
+            
+            default:
+            return animal => animal.Species;
+        } 
     }
 
     [HttpGet("search")]

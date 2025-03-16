@@ -19,15 +19,10 @@ namespace ZooKeepers.Models
             Animals?.Add(animal);
         }
 
-        public static readonly Dictionary<string, int> enclosuresDict = new Dictionary<string, int> 
+        public override string ToString()
         {
-            {"Lions' Den", 10},
-            {"Aviary", 50},
-            {"Reptile", 40},
-            {"Giraffe", 6},
-            {"Hippo", 10},
-        }; 
-
+            return $"{Name} {MaxCapacity}";
+        }
     }
 
 }
