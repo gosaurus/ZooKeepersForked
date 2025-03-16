@@ -9,6 +9,7 @@ using System.Globalization;
 using System.Reflection.Metadata.Ecma335;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using NLog.LayoutRenderers;
 
 namespace ZooKeepers.Controllers;
 
@@ -46,8 +47,6 @@ public class AnimalsController : ControllerBase
         [FromQuery] SearchParameters.SearchParameters searchParameters
     )
     {
-        Console.WriteLine(searchParameters);
-
         IQueryable<Animal> searchQuery = _context.Animals
             .Where(animal => 
                 (animal.Name.Contains(searchParameters.AnimalName) || searchParameters.AnimalName == null) &&
@@ -55,47 +54,51 @@ public class AnimalsController : ControllerBase
                 (animal.Classification == searchParameters.Classification || searchParameters.Classification == null) &&
                 (animal.DateAcquired == searchParameters.DateAcquired || searchParameters.DateAcquired == null) &&
                 (searchParameters.Age == null ||
-                    (DateTime.Now.Year - animal.DateOfBirth.Year == searchParameters.Age && //current year - dob year == search params
-                    (animal.DateOfBirth.Month < DateTime.Now.Month ||  // AND dob month has passed
-                    animal.DateOfBirth.Month == DateTime.Now.Month && animal.DateOfBirth.Day <= DateTime.Now.Day)) // if current month, compare dob day;
+                    (DateTime.Now.Year - animal.DateOfBirth.Year == searchParameters.Age &&
+                    (animal.DateOfBirth.Month < DateTime.Now.Month ||
+                    animal.DateOfBirth.Month == DateTime.Now.Month && animal.DateOfBirth.Day <= DateTime.Now.Day))
                 ));
 
-        
-        string filter = searchParameters.GetFilter(searchParameters); //ensure not null
+        string filter = searchParameters.GetFilter()!;
 
-        Console.WriteLine($"Filter = {filter}");
+        if (filter == null)
+        {
+            throw new ArgumentNullException("Results must be ordered: please provide a matching filter in the search paramters");
+        }
 
-        // if (searchParameters.OrderByDescending == "True")
-        //     searchQuery.OrderByDescending(filterLambdaExpression);
-        // else 
-        //     searchQuery.OrderBy(filterLambdaExpression);
+        var orderedSearchQuery = OrderDirection(searchQuery, GetFilterLambdaExpression(filter), searchParameters.OrderByDescending);
 
-        var searchQueryCount = await searchQuery.CountAsync();
-        
-        var animalsList = await searchQuery
-            .OrderBy(GetFilterLambdaExpression(filter))
+        var animalsList = await orderedSearchQuery
             .Skip((searchParameters.PageNumber - 1) * searchParameters.PageSize)
             .Take(searchParameters.PageSize)
             .ToListAsync();
+       
+        var searchQueryCount = await searchQuery.CountAsync();
 
         var response = new 
         {
-                TotalItems = searchQueryCount,
+                TotalItems = searchQueryCount + " matching animal(s) found",
                 searchParameters.PageSize,
                 searchParameters.PageNumber,
-                Animals = animalsList
+                Animals = animalsList,
+
         };
-        return Ok( response);
+
+        return Ok(response);
     }
 
-    // private static async Task<List<Animal>> OrderByDescending
-    // (
-    //     IQueryable<Animal> searchQuery,
-    //     Expression<Func<Animal, object>> FilterLambdaExpression
-    // )
-    // {
-    //     return await searchQuery.OrderByDescending(FilterLambdaExpression).ToListAsync();
-    // }
+    private static IQueryable<Animal> OrderDirection
+    (
+        IQueryable<Animal> searchQuery,
+        Expression<Func<Animal, object>> filter,
+        string order
+    )
+    {
+        if (order == "False") 
+            return searchQuery.OrderBy(filter);
+        else
+            return searchQuery.OrderByDescending(filter);
+    }
 
     private static Expression<Func<Animal, object>> GetFilterLambdaExpression(string filter)
     {

@@ -17,11 +17,11 @@ namespace ZooKeepers.SearchParameters
 
         public override string ToString()
         {
-            return $"search params, species = {Species}, class={Classification}\n" +
+            return $"search params, species = {Species}, class={Classification}" +
             $" search params age = {Age}, Acquisition = {DateAcquired}" +
             $" order by desc = {OrderByDescending}";
         }
-        public string? GetFilter(SearchParameters searchParameters)
+        public string? GetFilter()
         {
             if (AnimalName != null)
                 return "AnimalName";
