@@ -15,12 +15,11 @@ namespace ZooKeepers.Models
         public DateOnly DateAcquired { get;set; } 
         public required string Species {get; set;}
         public required string Classification {get; set;}
-        [ForeignKey("EnclosureId")]
+        public int? EnclosureId { get; set; }
         public Enclosure? Enclosure { get; set; }
         public override string ToString()
         {
             return $"{AnimalId} Name: {Name} - Enclosure: {Enclosure}";
         }
-
     }
 }

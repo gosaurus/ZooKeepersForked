@@ -17,13 +17,13 @@ namespace ZooKeepers.Data
 
                 for (int count = 1; count <= 116; count++)
                 {
-                    string name = ReadOnlyProperties.animalNames[Random.Shared.Next(ReadOnlyProperties.animalNames.Length)] + count;
+                    string name = ReadOnlyProperties.animalNames[Random.Shared.Next(ReadOnlyProperties.animalNames.Count)] + count;
                     string sex = 
                         ReadOnlyProperties.SexOptions
                         [Random.Shared.Next(ReadOnlyProperties.SexOptions.Count)];
                     DateOnly dateOfBirth = GetRandomDate(2010, 2024);
                     DateOnly dateAcquired = dateOfBirth.AddMonths(-1*Random.Shared.Next(1, 18));
-                    string species = ReadOnlyProperties.animalNames[Random.Shared.Next(ReadOnlyProperties.animalNames.Length)];
+                    string species = ReadOnlyProperties.animalNames[Random.Shared.Next(ReadOnlyProperties.animalNames.Count)];
                     string classification = 
                         ReadOnlyProperties.ClassificationOptions
                         [Random.Shared.Next(ReadOnlyProperties.ClassificationOptions.Count)];
@@ -83,9 +83,20 @@ namespace ZooKeepers.Data
                     for (var count = 0; count < enclosure.MaxCapacity; count++)
                     {
                         enclosure.AddAnimalToEnclosure(someAnimals[count]);
+                        someAnimals[count].EnclosureId = enclosure.EnclosureId;
                         zoodbcontext.SaveChanges();
                     }
                     someAnimals.RemoveRange(0,enclosure.MaxCapacity-1);
+                }
+
+                zoodbcontext.SaveChanges();
+                
+                foreach (var enclosure in allEnclosures)
+                {
+                    foreach (var animal in enclosure.Animals)
+                    {
+                        Console.WriteLine($"Enclosure {enclosure.Name}, {animal.Name}, {animal.EnclosureId} ");
+                    }
                 }
             }
         }

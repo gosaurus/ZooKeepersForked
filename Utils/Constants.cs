@@ -13,31 +13,17 @@ namespace ZooKeepers.Constants
         {
             "Male", "Female", "Other"
         }; 
-        public static readonly string[] animalNames = 
-        { 
-            "Aardvark",
-            "Donkey",
-            "India tiger",
-            "Panther",
-            "Leopard",
-            "Cheetah",
-            "African Elephant",
-            "Black bear",
-            "Red panda",
-            "Nile crocodile",
-            "Porcupine",
-            "Ostrich",
-            "Chimpanzee",
-            "Baboon",
-            "Gazelle",
-            "Hippo",
-            "Emu",
-            "Sloth",
-            "Hummingbird",
-            "Python",
-            "Toucan",
+        public static readonly List<string> animalNames =  
+        [
+            "Aardvark", "Donkey", "India tiger",
+            "Panther", "Leopard", "Cheetah",
+            "African Elephant", "Black bear", "Red panda",
+            "Nile crocodile", "Porcupine", "Ostrich",
+            "Chimpanzee", "Baboon", "Gazelle",
+            "Hippo", "Emu", "Sloth",
+            "Hummingbird", "Python", "Toucan",
             "Vulture"
-        }; 
+        ]; 
 
         public static readonly Dictionary<string, int> enclosuresDict = new Dictionary<string, int> 
         {
@@ -48,18 +34,13 @@ namespace ZooKeepers.Constants
             {"Hippo", 10},
         };
 
-        public static bool ValidSex(Animal animal, List<string> options)
+        public static bool ValidateOptions(string animalProperty, List<string> options)
         {
-            return options.Contains(animal.Sex);
+            return options.Contains(animalProperty);
         }
-
-        public static bool ValidClassification(Animal animal, List<string> options)
-        {
-            return options.Contains(animal.Classification);
-        }
-        public static bool ValidSpecies(Animal animal, string[] options)
-        {
-            return Array.Exists(options, species => species == animal.Species);
-        }
+        // public static bool ValidateEnclosure(Animal animal, Dictionary<string, int> enclosureDict)
+        // {
+        //     return Array.Exists(options, species => species == animal.Species);
+        // }
     } 
 };

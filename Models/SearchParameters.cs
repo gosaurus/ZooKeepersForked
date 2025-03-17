@@ -11,7 +11,15 @@ namespace ZooKeepers.SearchParameters
         public string? Classification { get; set; }
         public DateOnly? DateAcquired { get; set; }
         public int? Age { get; set; }
-        public int PageSize { get; set; } = 10;
+        private int _pageSize = 10;
+        public int PageSize
+        { 
+            get
+            { return _pageSize; }
+            set
+            { _pageSize = value < 50 ? _pageSize = value : _pageSize = MaxPageSize; } 
+        }
+        private int MaxPageSize = 50;
         public int PageNumber {get; set; } = 1;
         public string OrderByDescending { get; set; } = "False";
 
@@ -21,6 +29,7 @@ namespace ZooKeepers.SearchParameters
             $" search params age = {Age}, Acquisition = {DateAcquired}" +
             $" order by desc = {OrderByDescending}";
         }
+
         public string? GetFilter()
         {
             if (AnimalName != null)

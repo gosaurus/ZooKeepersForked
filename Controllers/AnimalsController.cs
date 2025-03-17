@@ -30,15 +30,31 @@ public class AnimalsController : ControllerBase
     public async Task<ActionResult<IEnumerable<Animal>>> Get()
     {
         _logger.LogInformation("Fetching all animals.");
-        return await _context.Animals.ToListAsync();
+
+        return await _context.Animals
+            .Include(animal => animal.Enclosure)
+            .ToListAsync();
     }
  
     [HttpGet("{animalid}")]
     public async Task<ActionResult<IEnumerable<Animal>>> GetAnimal(int animalid)
     {
-         _logger.LogInformation($"Fetching animals by id: {animalid}.");
-         var animal = await _context.Animals.FirstOrDefaultAsync(animal=> animalid == animal.AnimalId);
-         return animal==null? NotFound():Ok(animal);
+        _logger.LogInformation($"Fetching animals by id: {animalid}.");
+        var animal = await _context.Animals
+            .Include(animal => animal.Enclosure)
+            .FirstOrDefaultAsync(animal => animalid == animal.AnimalId);
+        return animal == null ? NotFound() : Ok(animal);
+    }
+    //queries animal 
+    [HttpGet("enclosure/{enclosuresid}")]
+    public async Task<ActionResult<IEnumerable<Enclosure>>> GetEnclosure(int enclosureid)
+    {
+        
+        Console.WriteLine($"Fetching enclosure by id: {enclosureid}.");
+        _logger.LogInformation($"Fetching enclosure by id: {enclosureid}.");
+        var enclosure = await _context.Enclosures
+            .FirstOrDefaultAsync(Enclosure => enclosureid == Enclosure.EnclosureId);
+        return enclosure == null ? NotFound() : Ok (enclosure);
     }
 
     [HttpGet("search2")]
@@ -48,6 +64,7 @@ public class AnimalsController : ControllerBase
     )
     {
         IQueryable<Animal> searchQuery = _context.Animals
+            .Include(animal => animal.Enclosure)
             .Where(animal => 
                 (animal.Name.Contains(searchParameters.AnimalName) || searchParameters.AnimalName == null) &&
                 (animal.Species == searchParameters.Species || searchParameters.Species == null) &&  
@@ -81,7 +98,6 @@ public class AnimalsController : ControllerBase
                 searchParameters.PageSize,
                 searchParameters.PageNumber,
                 Animals = animalsList,
-
         };
 
         return Ok(response);
@@ -91,10 +107,10 @@ public class AnimalsController : ControllerBase
     (
         IQueryable<Animal> searchQuery,
         Expression<Func<Animal, object>> filter,
-        string order
+        string orderDirection
     )
     {
-        if (order == "False") 
+        if (orderDirection == "False") 
             return searchQuery.OrderBy(filter);
         else
             return searchQuery.OrderByDescending(filter);
@@ -177,16 +193,22 @@ public class AnimalsController : ControllerBase
             break;
          }
 
-         var searchedAnimals= await animalsQuery.CountAsync();
-         var animals= await animalsQuery.Skip((pageNumber-1)*pageSize).Take(pageSize).ToListAsync();
+        var searchedAnimals= await animalsQuery.CountAsync();
+        var animals= await animalsQuery.Skip((pageNumber-1)*pageSize).Take(pageSize).ToListAsync();
 
-         var response = new 
-         {
-            TotalItems = searchedAnimals,
-            PageSize = pageSize,
-            PageNumber = pageNumber,
-            Animals = animals
-         };
+        var PaginatedResponseDetails = 
+            new GenericPaginatedResponse
+            {
+                TotalItems = searchedAnimals,
+                PageSize = pageSize,
+                PageNumber = pageNumber,
+            };
+
+        var response = new AnimalPaginatedResponse
+            {
+                Pagination = PaginatedResponseDetails, 
+                Animals = animals
+            };
 
          return Ok(response);
     }
@@ -201,25 +223,38 @@ public class AnimalsController : ControllerBase
             BadRequest(ModelState);
         }
 
-        if (!ReadOnlyProperties.ValidSex(animal, ReadOnlyProperties.SexOptions))
+        if (!ReadOnlyProperties.ValidateOptions(animal.Sex, ReadOnlyProperties.SexOptions))
         {
             string message = "Invalid input in 'Sex' field. Please try again.";
             return BadRequest(CreateProblemDetailsObject(HttpStatusCode.BadRequest, message));
         }
-        if (!ReadOnlyProperties.ValidClassification(animal, ReadOnlyProperties.ClassificationOptions))
+        if (!ReadOnlyProperties.ValidateOptions(animal.Classification, ReadOnlyProperties.ClassificationOptions))
         {
             string message = "Invalid input in 'Classification' field. Please try again.";
             return BadRequest(CreateProblemDetailsObject(HttpStatusCode.BadRequest, message));
         }
-        if (!ReadOnlyProperties.ValidSpecies(animal, ReadOnlyProperties.animalNames))
+        if (!ReadOnlyProperties.ValidateOptions(animal.Species, ReadOnlyProperties.animalNames))
         {
             string message = "Invalid input in 'Species' field. Please try again.";
             return BadRequest(CreateProblemDetailsObject(HttpStatusCode.BadRequest, message));
         }
         
+        if (animal.EnclosureId != null)
+        {    
+            var matchingEnclosure = await _context.Enclosures
+                .FirstOrDefaultAsync(enclosure => enclosure.EnclosureId == animal.EnclosureId);
+            if (matchingEnclosure == null) return NotFound("No matching Enclosure");
+
+            if (!matchingEnclosure.HasCapacity)
+            {
+                string message = $"Cannot add animal because {matchingEnclosure.Name} at maximum capacity.";
+                return BadRequest(CreateProblemDetailsObject(HttpStatusCode.BadRequest, message));
+            }
+        }
+
         _context.Animals.Add(animal);
         
-        _context.SaveChanges();
+        await _context.SaveChangesAsync();
         return CreatedAtAction(nameof(GetAnimal),new{animalid=animal.AnimalId},animal);
     }
 
@@ -228,7 +263,7 @@ public class AnimalsController : ControllerBase
         return new ProblemDetails 
         {
             Type = "https://datatracker.ietf.org/doc/html/rfc7231#section-6.5.1",
-            HttpStatusCode = (int?)statuscode,
+            Status = (int?)statuscode,
             Detail = message,
         };
     }
