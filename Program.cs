@@ -21,10 +21,8 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
+    ZooKeepersSeed.createEnclosures(services);
     ZooKeepersSeed.SeedAnimals(services);
-    bool createdEnclosures = ZooKeepersSeed.createEnclosures(services);
-    if (createdEnclosures)
-        ZooKeepersSeed.seedEnclosures(services);
 }
 
 // Configure the HTTP request pipeline.

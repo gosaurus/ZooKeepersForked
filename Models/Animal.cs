@@ -21,5 +21,27 @@ namespace ZooKeepers.Models
         {
             return $"{AnimalId} Name: {Name} - Enclosure: {Enclosure}";
         }
+
+        public Animal () {}
+
+        public Animal 
+        (
+            string name,
+            string sex,
+            DateOnly dateofbirth,
+            DateOnly dateacquired,
+            string species,
+            string classification,
+            int? enclosureid = null
+        )
+        { 
+            Name = name;
+            Sex = sex;
+            DateOfBirth = dateofbirth;
+            DateAcquired = dateacquired;
+            Species = species;
+            Classification = classification;
+            EnclosureId = enclosureid;
+        }
     }
 }

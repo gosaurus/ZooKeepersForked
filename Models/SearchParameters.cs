@@ -23,13 +23,6 @@ namespace ZooKeepers.SearchParameters
         public int PageNumber {get; set; } = 1;
         public string OrderByDescending { get; set; } = "False";
 
-        public override string ToString()
-        {
-            return $"search params, species = {Species}, class={Classification}" +
-            $" search params age = {Age}, Acquisition = {DateAcquired}" +
-            $" order by desc = {OrderByDescending}";
-        }
-
         public string? GetFilter()
         {
             if (AnimalName != null)

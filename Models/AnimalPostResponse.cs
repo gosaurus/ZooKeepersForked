@@ -8,7 +8,6 @@ namespace ZooKeepers.Models
         public int TotalItems { get; set; }
         public int PageSize { get; set; }
         public int PageNumber { get; set; } 
-
     }
 
     public class AnimalPaginatedResponse

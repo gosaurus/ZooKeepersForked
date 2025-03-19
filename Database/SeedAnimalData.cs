@@ -9,42 +9,6 @@ namespace ZooKeepers.Data
 {
     public static class ZooKeepersSeed
     {
-        public static void SeedAnimals(IServiceProvider serviceProvider)
-        {
-            using (var zoodbcontext = new ZooDbContext(serviceProvider.GetRequiredService<DbContextOptions<ZooDbContext>>()))
-            {
-                if(zoodbcontext.Animals.Any()) return;
-
-                for (int count = 1; count <= 116; count++)
-                {
-                    string name = ReadOnlyProperties.animalNames[Random.Shared.Next(ReadOnlyProperties.animalNames.Count)] + count;
-                    string sex = 
-                        ReadOnlyProperties.SexOptions
-                        [Random.Shared.Next(ReadOnlyProperties.SexOptions.Count)];
-                    DateOnly dateOfBirth = GetRandomDate(2010, 2024);
-                    DateOnly dateAcquired = dateOfBirth.AddMonths(-1*Random.Shared.Next(1, 18));
-                    string species = ReadOnlyProperties.animalNames[Random.Shared.Next(ReadOnlyProperties.animalNames.Count)];
-                    string classification = 
-                        ReadOnlyProperties.ClassificationOptions
-                        [Random.Shared.Next(ReadOnlyProperties.ClassificationOptions.Count)];
-
-                    zoodbcontext.Add
-                    (     
-                        new Animal
-                        {
-                            Name = name,
-                            Sex = sex,
-                            DateOfBirth = dateOfBirth,
-                            DateAcquired = dateAcquired,      
-                            Species = species,
-                            Classification = classification
-                        }
-                    );
-                
-                    zoodbcontext.SaveChanges();
-                }
-            }
-        }
         public static bool createEnclosures(IServiceProvider serviceProvider)
         {
             using (var zoodbcontext = new ZooDbContext
@@ -54,7 +18,6 @@ namespace ZooKeepers.Data
 
                 var seededEnclosures = new List<Enclosure>();
                 
-                //create enclosures
                 foreach (var enclosure in ReadOnlyProperties.enclosuresDict)
                 {
                     var enclosureToAdd = new Enclosure 
@@ -68,13 +31,54 @@ namespace ZooKeepers.Data
             }
             return true;
         }
+        public static void SeedAnimals(IServiceProvider serviceProvider)
+        {
+            using (var zoodbcontext = new ZooDbContext(serviceProvider.GetRequiredService<DbContextOptions<ZooDbContext>>()))
+            {
+                if(zoodbcontext.Animals.Any()) return;
+
+                var allEnclosures = zoodbcontext.Enclosures;
+
+                for (int count = 1; count <= 116; count++)
+                {
+                    string name = ReadOnlyProperties.animalNames[Random.Shared.Next(ReadOnlyProperties.animalNames.Count)] + count;
+                    string sex = 
+                        ReadOnlyProperties.SexOptions
+                        [Random.Shared.Next(ReadOnlyProperties.SexOptions.Count)];
+                    DateOnly dateOfBirth = GetRandomDate(2010, 2024);
+                    DateOnly dateAcquired = dateOfBirth.AddMonths(-1*Random.Shared.Next(1, 18));
+                    string species = ReadOnlyProperties.animalNames[Random.Shared.Next(ReadOnlyProperties.animalNames.Count)];
+                    string classification = 
+                        ReadOnlyProperties.ClassificationOptions
+                        [Random.Shared.Next(ReadOnlyProperties.ClassificationOptions.Count)];
+                    int enclosureid = Random.Shared.Next(1,5);
+
+                    Animal animalToAdd = new(name, sex, dateOfBirth, dateAcquired, species, classification)
+                    {
+                            Name = name,
+                            Sex = sex,
+                            DateOfBirth = dateOfBirth,
+                            DateAcquired = dateAcquired,      
+                            Species = species,
+                            Classification = classification,
+                    };
+                    
+                    var enclosureToAdd = allEnclosures
+                        .FirstOrDefault(enclosure => enclosure.EnclosureId == enclosureid);
+                    
+                    if (enclosureToAdd == null)
+                        throw new Exception ("No matching enclosure");
+                    enclosureToAdd.AddAnimal(animalToAdd);
+                    zoodbcontext.SaveChanges();
+                }
+            }
+        }
 
         public static void seedEnclosures(IServiceProvider serviceProvider)
         {
             using (var zoodbcontext = new ZooDbContext
                 ( serviceProvider.GetRequiredService<DbContextOptions<ZooDbContext>>()))
             {
-                //create list of Enclosure objects
                 var allEnclosures = zoodbcontext.Enclosures.ToList();
                 var someAnimals = zoodbcontext.Animals.ToList();
 
@@ -82,22 +86,13 @@ namespace ZooKeepers.Data
                 {
                     for (var count = 0; count < enclosure.MaxCapacity; count++)
                     {
-                        enclosure.AddAnimalToEnclosure(someAnimals[count]);
+                        enclosure.AddAnimal(someAnimals[count]);
                         someAnimals[count].EnclosureId = enclosure.EnclosureId;
                         zoodbcontext.SaveChanges();
                     }
                     someAnimals.RemoveRange(0,enclosure.MaxCapacity-1);
                 }
-
                 zoodbcontext.SaveChanges();
-                
-                foreach (var enclosure in allEnclosures)
-                {
-                    foreach (var animal in enclosure.Animals)
-                    {
-                        Console.WriteLine($"Enclosure {enclosure.Name}, {animal.Name}, {animal.EnclosureId} ");
-                    }
-                }
             }
         }
 

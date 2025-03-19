@@ -38,9 +38,5 @@ namespace ZooKeepers.Constants
         {
             return options.Contains(animalProperty);
         }
-        // public static bool ValidateEnclosure(Animal animal, Dictionary<string, int> enclosureDict)
-        // {
-        //     return Array.Exists(options, species => species == animal.Species);
-        // }
     } 
 };

@@ -5,12 +5,14 @@ using SQLitePCL;
 using ZooKeepers.Data;
 using ZooKeepers.Models;
 using ZooKeepers.Constants;
+using ZooKeepers.Helpers;
 using System.Globalization;
 using System.Reflection.Metadata.Ecma335;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using NLog.LayoutRenderers;
 using System.Net;
+
 
 namespace ZooKeepers.Controllers;
 
@@ -50,7 +52,6 @@ public class AnimalsController : ControllerBase
     public async Task<ActionResult<IEnumerable<Enclosure>>> GetEnclosure(int enclosureid)
     {
         
-        Console.WriteLine($"Fetching enclosure by id: {enclosureid}.");
         _logger.LogInformation($"Fetching enclosure by id: {enclosureid}.");
         var enclosure = await _context.Enclosures
             .FirstOrDefaultAsync(Enclosure => enclosureid == Enclosure.EnclosureId);
@@ -66,7 +67,7 @@ public class AnimalsController : ControllerBase
         IQueryable<Animal> searchQuery = _context.Animals
             .Include(animal => animal.Enclosure)
             .Where(animal => 
-                (animal.Name.Contains(searchParameters.AnimalName) || searchParameters.AnimalName == null) &&
+                (animal.Name == searchParameters.AnimalName || searchParameters.AnimalName == null) &&
                 (animal.Species == searchParameters.Species || searchParameters.Species == null) &&  
                 (animal.Classification == searchParameters.Classification || searchParameters.Classification == null) &&
                 (animal.DateAcquired == searchParameters.DateAcquired || searchParameters.DateAcquired == null) &&
@@ -83,7 +84,7 @@ public class AnimalsController : ControllerBase
             throw new ArgumentNullException("Results must be ordered: please provide a matching filter in the search paramters");
         }
 
-        var orderedSearchQuery = OrderDirection(searchQuery, GetFilterLambdaExpression(filter), searchParameters.OrderByDescending);
+        var orderedSearchQuery = AnimalControllerHelpers.OrderDirection(searchQuery, AnimalControllerHelpers.GetFilterLambdaExpression(filter), searchParameters.OrderByDescending);
 
         var animalsList = await orderedSearchQuery
             .Skip((searchParameters.PageNumber - 1) * searchParameters.PageSize)
@@ -101,44 +102,6 @@ public class AnimalsController : ControllerBase
         };
 
         return Ok(response);
-    }
-
-    private static IQueryable<Animal> OrderDirection
-    (
-        IQueryable<Animal> searchQuery,
-        Expression<Func<Animal, object>> filter,
-        string orderDirection
-    )
-    {
-        if (orderDirection == "False") 
-            return searchQuery.OrderBy(filter);
-        else
-            return searchQuery.OrderByDescending(filter);
-    }
-
-    private static Expression<Func<Animal, object>> GetFilterLambdaExpression(string filter)
-    {
-        
-        switch(filter.ToLower())
-        {
-            case "name":
-            return animal => animal.Name;
-
-            case "classification":
-            return animal => animal.Classification;
-            
-            case "dateacquired":
-            return animal  => animal.DateAcquired;
-
-            case "age":
-            return animal => animal.DateOfBirth;
-
-            case "species":
-            return animal => animal.Species;
-            
-            default:
-            return animal => animal.Species;
-        } 
     }
 
     [HttpGet("search")]
@@ -226,17 +189,17 @@ public class AnimalsController : ControllerBase
         if (!ReadOnlyProperties.ValidateOptions(animal.Sex, ReadOnlyProperties.SexOptions))
         {
             string message = "Invalid input in 'Sex' field. Please try again.";
-            return BadRequest(CreateProblemDetailsObject(HttpStatusCode.BadRequest, message));
+            return BadRequest(AnimalControllerHelpers.CreateProblemDetailsObject(HttpStatusCode.BadRequest, message));
         }
         if (!ReadOnlyProperties.ValidateOptions(animal.Classification, ReadOnlyProperties.ClassificationOptions))
         {
             string message = "Invalid input in 'Classification' field. Please try again.";
-            return BadRequest(CreateProblemDetailsObject(HttpStatusCode.BadRequest, message));
+            return BadRequest(AnimalControllerHelpers.CreateProblemDetailsObject(HttpStatusCode.BadRequest, message));
         }
         if (!ReadOnlyProperties.ValidateOptions(animal.Species, ReadOnlyProperties.animalNames))
         {
             string message = "Invalid input in 'Species' field. Please try again.";
-            return BadRequest(CreateProblemDetailsObject(HttpStatusCode.BadRequest, message));
+            return BadRequest(AnimalControllerHelpers.CreateProblemDetailsObject(HttpStatusCode.BadRequest, message));
         }
         
         if (animal.EnclosureId != null)
@@ -245,10 +208,11 @@ public class AnimalsController : ControllerBase
                 .FirstOrDefaultAsync(enclosure => enclosure.EnclosureId == animal.EnclosureId);
             if (matchingEnclosure == null) return NotFound("No matching Enclosure");
 
-            if (!matchingEnclosure.HasCapacity)
+            Console.WriteLine($"{matchingEnclosure} {matchingEnclosure.HasCapacity()} before checking");
+            if (!matchingEnclosure.HasCapacity())
             {
                 string message = $"Cannot add animal because {matchingEnclosure.Name} at maximum capacity.";
-                return BadRequest(CreateProblemDetailsObject(HttpStatusCode.BadRequest, message));
+                return BadRequest(AnimalControllerHelpers.CreateProblemDetailsObject(HttpStatusCode.BadRequest, message));
             }
         }
 
@@ -256,16 +220,6 @@ public class AnimalsController : ControllerBase
         
         await _context.SaveChangesAsync();
         return CreatedAtAction(nameof(GetAnimal),new{animalid=animal.AnimalId},animal);
-    }
-
-    public static object CreateProblemDetailsObject(HttpStatusCode statuscode, string message)
-    {
-        return new ProblemDetails 
-        {
-            Type = "https://datatracker.ietf.org/doc/html/rfc7231#section-6.5.1",
-            Status = (int?)statuscode,
-            Detail = message,
-        };
     }
 
 }
