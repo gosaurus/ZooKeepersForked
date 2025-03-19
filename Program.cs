@@ -2,6 +2,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.EntityFrameworkCore;
 using ZooKeepers.Data;
 using ZooKeepers.Models;
+using ZooKeepers.Constants;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,6 +21,7 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
+    ZooKeepersSeed.createEnclosures(services);
     ZooKeepersSeed.SeedAnimals(services);
 }
 

@@ -4,8 +4,14 @@ using Microsoft.EntityFrameworkCore.Design;
 using SQLitePCL;
 using ZooKeepers.Data;
 using ZooKeepers.Models;
+using ZooKeepers.Constants;
+using ZooKeepers.Helpers;
 using System.Globalization;
-
+using System.Reflection.Metadata.Ecma335;
+using System.Linq.Expressions;
+using System.Threading.Tasks;
+using NLog.LayoutRenderers;
+using System.Net;
 
 
 namespace ZooKeepers.Controllers;
@@ -21,21 +27,81 @@ public class AnimalsController : ControllerBase
     {
         _logger = logger;
         _context = context;
-        
     }
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Animal>>> Get()
     {
         _logger.LogInformation("Fetching all animals.");
-        return await _context.Animals.ToListAsync();
+
+        return await _context.Animals
+            .Include(animal => animal.Enclosure)
+            .ToListAsync();
     }
  
     [HttpGet("{animalid}")]
     public async Task<ActionResult<IEnumerable<Animal>>> GetAnimal(int animalid)
     {
-         _logger.LogInformation($"Fetching animals by id: {animalid}.");
-         var animal = await _context.Animals.FirstOrDefaultAsync(animal=> animalid == animal.AnimalId);
-         return animal==null? NotFound():Ok(animal);
+        _logger.LogInformation($"Fetching animals by id: {animalid}.");
+        var animal = await _context.Animals
+            .Include(animal => animal.Enclosure)
+            .FirstOrDefaultAsync(animal => animalid == animal.AnimalId);
+        return animal == null ? NotFound() : Ok(animal);
+    }
+    //queries animal 
+    [HttpGet("enclosure/{enclosuresid}")]
+    public async Task<ActionResult<IEnumerable<Enclosure>>> GetEnclosure(int enclosureid)
+    {
+        
+        _logger.LogInformation($"Fetching enclosure by id: {enclosureid}.");
+        var enclosure = await _context.Enclosures
+            .FirstOrDefaultAsync(Enclosure => enclosureid == Enclosure.EnclosureId);
+        return enclosure == null ? NotFound() : Ok (enclosure);
+    }
+
+    [HttpGet("search2")]
+    public async Task<ActionResult<IEnumerable<Animal>>> GetPaginatedResults
+    (
+        [FromQuery] SearchParameters.SearchParameters searchParameters
+    )
+    {
+        IQueryable<Animal> searchQuery = _context.Animals
+            .Include(animal => animal.Enclosure)
+            .Where(animal => 
+                (animal.Name == searchParameters.AnimalName || searchParameters.AnimalName == null) &&
+                (animal.Species == searchParameters.Species || searchParameters.Species == null) &&  
+                (animal.Classification == searchParameters.Classification || searchParameters.Classification == null) &&
+                (animal.DateAcquired == searchParameters.DateAcquired || searchParameters.DateAcquired == null) &&
+                (searchParameters.Age == null ||
+                    (DateTime.Now.Year - animal.DateOfBirth.Year == searchParameters.Age &&
+                    (animal.DateOfBirth.Month < DateTime.Now.Month ||
+                    animal.DateOfBirth.Month == DateTime.Now.Month && animal.DateOfBirth.Day <= DateTime.Now.Day))
+                ));
+
+        string filter = searchParameters.GetFilter()!;
+
+        if (filter == null)
+        {
+            throw new ArgumentNullException("Results must be ordered: please provide a matching filter in the search paramters");
+        }
+
+        var orderedSearchQuery = AnimalControllerHelpers.OrderDirection(searchQuery, AnimalControllerHelpers.GetFilterLambdaExpression(filter), searchParameters.OrderByDescending);
+
+        var animalsList = await orderedSearchQuery
+            .Skip((searchParameters.PageNumber - 1) * searchParameters.PageSize)
+            .Take(searchParameters.PageSize)
+            .ToListAsync();
+       
+        var searchQueryCount = await searchQuery.CountAsync();
+
+        var response = new 
+        {
+                TotalItems = searchQueryCount + " matching animal(s) found",
+                searchParameters.PageSize,
+                searchParameters.PageNumber,
+                Animals = animalsList,
+        };
+
+        return Ok(response);
     }
 
     [HttpGet("search")]
@@ -90,27 +156,69 @@ public class AnimalsController : ControllerBase
             break;
          }
 
-         var searchedAnimals= await animalsQuery.CountAsync();
-         var animals= await animalsQuery.Skip((pageNumber-1)*pageSize).Take(pageSize).ToListAsync();
+        var searchedAnimals= await animalsQuery.CountAsync();
+        var animals= await animalsQuery.Skip((pageNumber-1)*pageSize).Take(pageSize).ToListAsync();
 
-         var response = new 
-         {
-            TotalItems = searchedAnimals,
-            PageSize = pageSize,
-            PageNumber = pageNumber,
-            Animals = animals
-         };
+        var PaginatedResponseDetails = 
+            new GenericPaginatedResponse
+            {
+                TotalItems = searchedAnimals,
+                PageSize = pageSize,
+                PageNumber = pageNumber,
+            };
+
+        var response = new AnimalPaginatedResponse
+            {
+                Pagination = PaginatedResponseDetails, 
+                Animals = animals
+            };
 
          return Ok(response);
     }
 
     [HttpPost]
 
-    public ActionResult Post(Animal animal)
+    public async Task<ActionResult> Post([FromBody] Animal animal)
     {
         _logger.LogInformation($"Adding Animal {animal.Name}");
+        if (!ModelState.IsValid)
+        {
+            BadRequest(ModelState);
+        }
+
+        if (!ReadOnlyProperties.ValidateOptions(animal.Sex, ReadOnlyProperties.SexOptions))
+        {
+            string message = "Invalid input in 'Sex' field. Please try again.";
+            return BadRequest(AnimalControllerHelpers.CreateProblemDetailsObject(HttpStatusCode.BadRequest, message));
+        }
+        if (!ReadOnlyProperties.ValidateOptions(animal.Classification, ReadOnlyProperties.ClassificationOptions))
+        {
+            string message = "Invalid input in 'Classification' field. Please try again.";
+            return BadRequest(AnimalControllerHelpers.CreateProblemDetailsObject(HttpStatusCode.BadRequest, message));
+        }
+        if (!ReadOnlyProperties.ValidateOptions(animal.Species, ReadOnlyProperties.animalNames))
+        {
+            string message = "Invalid input in 'Species' field. Please try again.";
+            return BadRequest(AnimalControllerHelpers.CreateProblemDetailsObject(HttpStatusCode.BadRequest, message));
+        }
+        
+        if (animal.EnclosureId != null)
+        {    
+            var matchingEnclosure = await _context.Enclosures
+                .FirstOrDefaultAsync(enclosure => enclosure.EnclosureId == animal.EnclosureId);
+            if (matchingEnclosure == null) return NotFound("No matching Enclosure");
+
+            Console.WriteLine($"{matchingEnclosure} {matchingEnclosure.HasCapacity()} before checking");
+            if (!matchingEnclosure.HasCapacity())
+            {
+                string message = $"Cannot add animal because {matchingEnclosure.Name} at maximum capacity.";
+                return BadRequest(AnimalControllerHelpers.CreateProblemDetailsObject(HttpStatusCode.BadRequest, message));
+            }
+        }
+
         _context.Animals.Add(animal);
-        _context.SaveChanges();
+        
+        await _context.SaveChangesAsync();
         return CreatedAtAction(nameof(GetAnimal),new{animalid=animal.AnimalId},animal);
     }
 

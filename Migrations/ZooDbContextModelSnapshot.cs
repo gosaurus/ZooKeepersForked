@@ -33,6 +33,9 @@ namespace ZooKeepers.Migrations
                     b.Property<DateOnly>("DateOfBirth")
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("EnclosureId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -47,7 +50,36 @@ namespace ZooKeepers.Migrations
 
                     b.HasKey("AnimalId");
 
+                    b.HasIndex("EnclosureId");
+
                     b.ToTable("Animals");
+                });
+
+            modelBuilder.Entity("ZooKeepers.Models.Enclosure", b =>
+                {
+                    b.Property<int>("EnclosureId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("MaxCapacity")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("EnclosureId");
+
+                    b.ToTable("Enclosures");
+                });
+
+            modelBuilder.Entity("ZooKeepers.Models.Animal", b =>
+                {
+                    b.HasOne("ZooKeepers.Models.Enclosure", "Enclosure")
+                        .WithMany()
+                        .HasForeignKey("EnclosureId");
+
+                    b.Navigation("Enclosure");
                 });
 #pragma warning restore 612, 618
         }

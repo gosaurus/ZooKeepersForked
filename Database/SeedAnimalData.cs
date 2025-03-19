@@ -2,100 +2,97 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using NLog.LayoutRenderers;
+using ZooKeepers.Constants;
 using ZooKeepers.Models;
 
 namespace ZooKeepers.Data
 {
     public static class ZooKeepersSeed
     {
-        private static readonly Dictionary<string, (string Species, string Classification)> zooanimals = new Dictionary<string, (string Species, string Classification)>
+        public static bool createEnclosures(IServiceProvider serviceProvider)
+        {
+            using (var zoodbcontext = new ZooDbContext
+                (serviceProvider.GetRequiredService<DbContextOptions<ZooDbContext>>()))
             {
-                    {"Dory", ("Blue Tang", "Fish")},
-                    {"Nemo", ("Clownfish", "Fish")},
-                    {"Flounder", ("Fish", "Fish")},
-                    {"Marlin", ("Clownfish", "Fish")},
-                    {"Sebastian", ("Red Jamaican Crab", "Invertebrate")},
-                    {"Bambi", ("Deer", "Mammal")},
-                    {"Thumper", ("Rabbit", "Mammal")},
-                    {"Flower", ("Skunk", "Mammal")},
-                    {"Gus Gus", ("Mouse", "Mammal")},
-                    {"Jaq", ("Mouse", "Mammal")},
-                    {"Mickey Mouse", ("Mouse", "Mammal")},
-                    {"Minnie Mouse", ("Mouse", "Mammal")},
-                    {"Goofy", ("Dog", "Mammal")},
-                    {"Pluto", ("Dog", "Mammal")},
-                    {"Copper", ("Hound Dog", "Mammal")},
-                    {"Todd", ("Fox", "Mammal")},
-                    {"Robin Hood", ("Fox", "Mammal")},
-                    {"Little John", ("Bear", "Mammal")},
-                    {"Ben", ("Rat", "Mammal")},
-                    {"Wilbur", ("Pig", "Mammal")},
-                    {"Charlotte", ("Spider", "Invertebrate")},
-                    {"Bagheera", ("Panther", "Mammal")},
-                    {"Kaa", ("Python", "Reptile")},
-                    {"Tiana", ("Frog", "Amphibian")},
-                    {"Louis", ("Alligator", "Reptile")},
-                    {"Pascal", ("Chameleon", "Reptile")},
-                    {"Maximus", ("Horse", "Mammal")},
-                    {"Sven", ("Reindeer", "Mammal")},
-                    {"Flit", ("Hummingbird", "Bird")},
-                    {"Donald Duck", ("Duck", "Bird")},
-                    {"Scrooge McDuck", ("Duck", "Bird")},
-                    {"Robin", ("Bird", "Bird")},
-                    {"Lenny", ("Whale", "Fish")},
-                    {"Gordon", ("Crab", "Invertebrate")},
-                    {"Crush", ("Sea Turtle", "Reptile")},
-                    {"Zazu", ("Hornbill", "Bird")},
-                    {"Timon", ("Meerkat", "Mammal")},
-                    {"Pumbaa", ("Warthog", "Mammal")},
-                    {"Lumière", ("Candle", "Other")},
-                    {"Madame Mim", ("Snake", "Reptile")},
-                    {"Frou-Frou", ("Bird", "Bird")},
-                    {"Gaston", ("Boar", "Mammal")},
-                    {"Coco", ("Dog", "Mammal")},
-                    {"Sally", ("Spider", "Invertebrate")},
-                    {"Moo", ("Cow", "Mammal")},
-                    {"Dumbo", ("Elephant", "Mammal")},
-                    {"Tramp", ("Dog", "Mammal")},
-                    {"Lady", ("Dog", "Mammal")},
-                    {"Jock", ("Dog", "Mammal")},
-                    {"Scrooge", ("Duck", "Bird")},
-                    {"Huey", ("Duck", "Bird")},
-                    {"Dewey", ("Duck", "Bird")},
-                    {"Louie", ("Duck", "Bird")},
-                    {"Perdita", ("Dog", "Mammal")},
-                    {"Pongo", ("Dog", "Mammal")},
-                    {"Luna", ("Polar Bear", "Mammal")},
-                    {"Pip", ("Squirrel", "Mammal")},
-                    {"Cody", ("Golden Retriever", "Mammal")},
-                    {"Bernadette", ("Poodle", "Mammal")},
-                    {"Princess", ("Cat", "Mammal")},
-                    {"Shenzi", ("Hyena", "Mammal")},
-                    {"Banzai", ("Hyena", "Mammal")},
-                    {"Ed", ("Hyena", "Mammal")},
-                    {"Lizard", ("Lizard", "Reptile")},
-                    {"Bolt", ("Dog", "Mammal")},
-                    {"Slinky Dog", ("Dog", "Mammal")},
-                    {"Mr. Pricklepants", ("Hedgehog", "Mammal")}
-                };
-        private static readonly string[] gender = ["Male", "Female", "Other"];
+                if (zoodbcontext.Enclosures.Any()) return false;
 
+                var seededEnclosures = new List<Enclosure>();
+                
+                foreach (var enclosure in ReadOnlyProperties.enclosuresDict)
+                {
+                    var enclosureToAdd = new Enclosure 
+                    {
+                        Name = enclosure.Key,
+                        MaxCapacity = enclosure.Value
+                    };
+                    zoodbcontext.Enclosures.Add(enclosureToAdd);
+                    zoodbcontext.SaveChanges();
+                }
+            }
+            return true;
+        }
         public static void SeedAnimals(IServiceProvider serviceProvider)
         {
             using (var zoodbcontext = new ZooDbContext(serviceProvider.GetRequiredService<DbContextOptions<ZooDbContext>>()))
             {
                 if(zoodbcontext.Animals.Any()) return;
-                foreach (var animal in zooanimals)
+
+                var allEnclosures = zoodbcontext.Enclosures;
+
+                for (int count = 1; count <= 116; count++)
                 {
-                    string name = animal.Key;
-                    string sex = gender[Random.Shared.Next(gender.Length)];
-                    DateOnly dateOfBirth = GetRandomDate();
-                    DateOnly dateAcquired = dateOfBirth.AddYears(Random.Shared.Next(1, 5));
-                    string species = animal.Value.Species;
-                    string classification = animal.Value.Classification;
-                    zoodbcontext.Animals.Add(new Animal{Name=name, Sex=sex, DateOfBirth=dateOfBirth, DateAcquired=dateAcquired, Species=species, Classification=classification});
+                    string name = ReadOnlyProperties.animalNames[Random.Shared.Next(ReadOnlyProperties.animalNames.Count)] + count;
+                    string sex = 
+                        ReadOnlyProperties.SexOptions
+                        [Random.Shared.Next(ReadOnlyProperties.SexOptions.Count)];
+                    DateOnly dateOfBirth = GetRandomDate(2010, 2024);
+                    DateOnly dateAcquired = dateOfBirth.AddMonths(-1*Random.Shared.Next(1, 18));
+                    string species = ReadOnlyProperties.animalNames[Random.Shared.Next(ReadOnlyProperties.animalNames.Count)];
+                    string classification = 
+                        ReadOnlyProperties.ClassificationOptions
+                        [Random.Shared.Next(ReadOnlyProperties.ClassificationOptions.Count)];
+                    int enclosureid = Random.Shared.Next(1,5);
+
+                    Animal animalToAdd = new(name, sex, dateOfBirth, dateAcquired, species, classification)
+                    {
+                            Name = name,
+                            Sex = sex,
+                            DateOfBirth = dateOfBirth,
+                            DateAcquired = dateAcquired,      
+                            Species = species,
+                            Classification = classification,
+                    };
+                    
+                    var enclosureToAdd = allEnclosures
+                        .FirstOrDefault(enclosure => enclosure.EnclosureId == enclosureid);
+                    
+                    if (enclosureToAdd == null)
+                        throw new Exception ("No matching enclosure");
+                    enclosureToAdd.AddAnimal(animalToAdd);
                     zoodbcontext.SaveChanges();
                 }
+            }
+        }
+
+        public static void seedEnclosures(IServiceProvider serviceProvider)
+        {
+            using (var zoodbcontext = new ZooDbContext
+                ( serviceProvider.GetRequiredService<DbContextOptions<ZooDbContext>>()))
+            {
+                var allEnclosures = zoodbcontext.Enclosures.ToList();
+                var someAnimals = zoodbcontext.Animals.ToList();
+
+                foreach (var enclosure in allEnclosures)
+                {
+                    for (var count = 0; count < enclosure.MaxCapacity; count++)
+                    {
+                        enclosure.AddAnimal(someAnimals[count]);
+                        someAnimals[count].EnclosureId = enclosure.EnclosureId;
+                        zoodbcontext.SaveChanges();
+                    }
+                    someAnimals.RemoveRange(0,enclosure.MaxCapacity-1);
+                }
+                zoodbcontext.SaveChanges();
             }
         }
 
